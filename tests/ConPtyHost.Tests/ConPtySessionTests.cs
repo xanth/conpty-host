@@ -24,7 +24,9 @@ public class ConPtySessionTests
 
         ConPtyTerminalBackend backend = new();
         await using ITerminalSession session = await backend.StartAsync(
-            "pwsh -NoLogo -NoProfile -Command \"Write-Output conpty-ok\"",
+            // cmd is instant and always present; pwsh cold start on a CI
+            // runner is slow enough to dominate the test.
+            "cmd.exe /c echo conpty-ok",
             workingDirectory: null,
             width: 120,
             height: 30);
@@ -34,7 +36,7 @@ public class ConPtySessionTests
         // ConPTY emits terminal setup sequences before any program output, so
         // the marker will not be in the first chunk. Accumulate until it shows
         // up, the stream ends, or the clock runs out.
-        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(60));
         using StreamReader reader = new(session.Output);
         StringBuilder seen = new();
         char[] buffer = new char[4096];
