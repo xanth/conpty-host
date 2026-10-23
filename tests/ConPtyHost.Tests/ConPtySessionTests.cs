@@ -12,7 +12,6 @@ namespace ConPtyHost.Tests;
 public class ConPtySessionTests
 {
     [Test]
-    [Skip("Requires a Windows 10 1809+ agent; see OPEN-QUESTIONS.md on CI.")]
     public async Task A_session_echoes_what_it_is_told_to_print()
     {
         await Assert.That(OperatingSystem.IsWindows()).IsTrue();
@@ -26,15 +25,15 @@ public class ConPtySessionTests
 
         await Assert.That(session.ProcessId).IsGreaterThan(0);
 
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
         using StreamReader reader = new(session.Output);
         char[] buffer = new char[4096];
-        int read = await reader.ReadAsync(buffer, CancellationToken.None);
+        int read = await reader.ReadAsync(buffer, timeout.Token);
 
         await Assert.That(new string(buffer, 0, read)).Contains("conpty-ok");
     }
 
     [Test]
-    [Skip("Requires a Windows 10 1809+ agent; see OPEN-QUESTIONS.md on CI.")]
     public async Task Resize_is_accepted_by_a_live_session()
     {
         ConPtyTerminalBackend backend = new();

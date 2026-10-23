@@ -18,6 +18,8 @@ jobs:
         # the platform-independent layers still compile and pass.
         os: [windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
+    # A ConPTY teardown bug hangs rather than failing; cap the job.
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
