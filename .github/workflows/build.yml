@@ -39,4 +39,8 @@ jobs:
         run: dotnet build --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test --no-build --configuration Release
+        # A Microsoft.Testing.Platform project builds to an executable, so run
+        # it directly rather than depending on the SDK's test-runner opt-in.
+        run: >
+          dotnet run --project tests/ConPtyHost.Tests/ConPtyHost.Tests.csproj
+          --configuration Release --no-build
