@@ -11,7 +11,7 @@ namespace ConPtyHost.Core.Terminal;
 /// the handoff: handlers never block on the transport, and the transport
 /// reads at its own pace.
 /// </remarks>
-public sealed class SessionEventStream
+public sealed class SessionEvents
 {
     private readonly Channel<object> channel = Channel.CreateUnbounded<object>(
         new UnboundedChannelOptions { SingleReader = true });

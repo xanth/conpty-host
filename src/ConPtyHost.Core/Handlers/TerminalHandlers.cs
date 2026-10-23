@@ -55,14 +55,14 @@ public sealed class CloseSessionHandler(SessionRegistry registry) : IRequestHand
 /// Mediator's generator requires a handler for every declared message, which
 /// is why these exist as real handlers rather than being left implicit.
 /// </remarks>
-public sealed class SessionOutputHandler(SessionEventStream events)
+public sealed class SessionOutputHandler(SessionEvents events)
     : INotificationHandler<SessionOutput>
 {
     public ValueTask Handle(SessionOutput notification, CancellationToken cancellationToken) =>
         events.PublishAsync(notification, cancellationToken);
 }
 
-public sealed class SessionExitedHandler(SessionEventStream events, SessionRegistry registry)
+public sealed class SessionExitedHandler(SessionEvents events, SessionRegistry registry)
     : INotificationHandler<SessionExited>
 {
     public async ValueTask Handle(SessionExited notification, CancellationToken cancellationToken)
