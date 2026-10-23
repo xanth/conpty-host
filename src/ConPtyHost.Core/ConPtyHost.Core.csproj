@@ -1,5 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup Label="Package">
+    <PackageId>ConPtyHost.Core</PackageId>
+    <Description>A Windows pseudoconsole (ConPTY) terminal backend behind a transport-agnostic interface.</Description>
+    <Authors>Rhys Williams</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/xanth/conpty-host</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup Label="Package">
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Mediator.Abstractions" />
     <PackageReference Include="Mediator.SourceGenerator">

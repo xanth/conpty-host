@@ -14,6 +14,7 @@
          MessagePack-CSharp; source-generated shapes suit AOT. -->
     <PackageVersion Include="Nerdbank.MessagePack" Version="1.4.95" />
 
+    <PackageVersion Include="Nerdbank.GitVersioning" Version="3.10.94" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
   </ItemGroup>

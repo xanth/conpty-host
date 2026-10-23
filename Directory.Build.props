@@ -18,4 +18,10 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Versions come from git height and version.json, so no project
+         carries a hardcoded version number. -->
+    <PackageReference Include="Nerdbank.GitVersioning" PrivateAssets="all" />
+  </ItemGroup>
+
 </Project>

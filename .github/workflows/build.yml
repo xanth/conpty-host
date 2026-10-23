@@ -1,0 +1,42 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows is the only OS that can run the ConPTY tests; Linux proves
+        # the platform-independent layers still compile and pass.
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Nerdbank.GitVersioning computes from git height.
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          # global.json pins an 11.x SDK, which is RC until November 2026,
+          # so the preview channel is required until GA.
+          dotnet-version: '11.0.x'
+          dotnet-quality: 'preview'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release

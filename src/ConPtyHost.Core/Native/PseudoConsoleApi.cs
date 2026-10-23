@@ -1,10 +1,16 @@
-// Port of the ConPTY interop in microsoft/terminal's GUIConsole.ConPTY sample
-// (MIT). Kept 1:1 in shape and call order; the marshalling is modernised to
-// source-generated LibraryImport so the layer stays AOT- and trim-safe.
+// Copyright (c) Microsoft Corporation.
+// Copyright (c) 2026 Rhys Williams.
+// Licensed under the MIT License.
 //
-// Deviation from the sample: STARTUPINFO's unused string fields are declared
-// as nint rather than string, which keeps STARTUPINFOEX blittable and lets
-// CreateProcess go through LibraryImport. The sample never sets them.
+// Derived from the GUIConsole.ConPTY sample in microsoft/terminal.
+// https://github.com/microsoft/terminal/tree/main/samples/ConPTY/GUIConsole
+
+// Kept 1:1 with the sample in shape and call order. Two deviations:
+//   - DllImport is replaced by source-generated LibraryImport, so the layer
+//     stays AOT- and trim-safe.
+//   - STARTUPINFO's unused string fields are declared as nint rather than
+//     string, which keeps STARTUPINFOEX blittable and lets CreateProcess go
+//     through LibraryImport. The sample never sets them.
 
 using System.Runtime.InteropServices;
 

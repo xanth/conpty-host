@@ -1,6 +1,13 @@
 MIT License
 
 Copyright (c) 2026 Rhys Williams
+Copyright (c) Microsoft Corporation
+
+This project is licensed under the MIT License. Portions of this software —
+the ConPTY interop under src/ConPtyHost.Core/Native — are derived from the
+GUIConsole.ConPTY sample in microsoft/terminal, which is itself MIT licensed
+and copyright Microsoft Corporation. Both copyright notices above are retained
+as that licence requires.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

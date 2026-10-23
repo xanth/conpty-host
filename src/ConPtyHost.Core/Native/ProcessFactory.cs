@@ -1,3 +1,10 @@
+// Copyright (c) Microsoft Corporation.
+// Copyright (c) 2026 Rhys Williams.
+// Licensed under the MIT License.
+//
+// Derived from the GUIConsole.ConPTY sample in microsoft/terminal.
+// https://github.com/microsoft/terminal/tree/main/samples/ConPTY/GUIConsole
+
 using System.Runtime.InteropServices;
 
 namespace ConPtyHost.Core.Native;
