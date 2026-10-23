@@ -82,6 +82,13 @@ internal sealed class ConPtyTerminalSession : ITerminalSession
         Stream output = new FileStream(
             new SafeFileHandle(outputPipe.ReadSide, ownsHandle: false), FileAccess.Read);
 
+        // ConPTY duplicated the ends it was given, so release our copies now
+        // that the client exists. While we still hold the output write side,
+        // our read side never observes EOF and a read blocks indefinitely
+        // once the client stops producing.
+        inputPipe.CloseReadSide();
+        outputPipe.CloseWriteSide();
+
         return new ConPtyTerminalSession(inputPipe, outputPipe, console, process, input, output);
     }
 
