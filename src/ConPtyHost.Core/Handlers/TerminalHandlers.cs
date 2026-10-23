@@ -47,3 +47,29 @@ public sealed class CloseSessionHandler(SessionRegistry registry) : IRequestHand
         return Unit.Value;
     }
 }
+
+/// <summary>
+/// Forwards session output to the event stream a transport reads.
+/// </summary>
+/// <remarks>
+/// Mediator's generator requires a handler for every declared message, which
+/// is why these exist as real handlers rather than being left implicit.
+/// </remarks>
+public sealed class SessionOutputHandler(SessionEventStream events)
+    : INotificationHandler<SessionOutput>
+{
+    public ValueTask Handle(SessionOutput notification, CancellationToken cancellationToken) =>
+        events.PublishAsync(notification, cancellationToken);
+}
+
+public sealed class SessionExitedHandler(SessionEventStream events, SessionRegistry registry)
+    : INotificationHandler<SessionExited>
+{
+    public async ValueTask Handle(SessionExited notification, CancellationToken cancellationToken)
+    {
+        // An exited session is unusable; drop it before telling anyone, so a
+        // late request fails as "no such session" rather than on a dead pipe.
+        _ = await registry.RemoveAsync(notification.SessionId).ConfigureAwait(false);
+        await events.PublishAsync(notification, cancellationToken).ConfigureAwait(false);
+    }
+}
