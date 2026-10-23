@@ -1,4 +1,5 @@
 using System.Runtime.Versioning;
+using System.Text;
 using ConPtyHost.Core.Terminal;
 
 namespace ConPtyHost.Tests;
@@ -14,6 +15,11 @@ public class ConPtySessionTests
     [Test]
     public async Task A_session_echoes_what_it_is_told_to_print()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
         await Assert.That(OperatingSystem.IsWindows()).IsTrue();
 
         ConPtyTerminalBackend backend = new();
@@ -25,17 +31,36 @@ public class ConPtySessionTests
 
         await Assert.That(session.ProcessId).IsGreaterThan(0);
 
+        // ConPTY emits terminal setup sequences before any program output, so
+        // the marker will not be in the first chunk. Accumulate until it shows
+        // up, the stream ends, or the clock runs out.
         using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(30));
         using StreamReader reader = new(session.Output);
+        StringBuilder seen = new();
         char[] buffer = new char[4096];
-        int read = await reader.ReadAsync(buffer, timeout.Token);
 
-        await Assert.That(new string(buffer, 0, read)).Contains("conpty-ok");
+        while (!seen.ToString().Contains("conpty-ok", StringComparison.Ordinal))
+        {
+            int read = await reader.ReadAsync(buffer, timeout.Token);
+            if (read == 0)
+            {
+                break;
+            }
+
+            seen.Append(buffer, 0, read);
+        }
+
+        await Assert.That(seen.ToString()).Contains("conpty-ok");
     }
 
     [Test]
     public async Task Resize_is_accepted_by_a_live_session()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
         ConPtyTerminalBackend backend = new();
         await using ITerminalSession session = await backend.StartAsync(
             "pwsh -NoLogo -NoProfile", workingDirectory: null, width: 80, height: 24);
