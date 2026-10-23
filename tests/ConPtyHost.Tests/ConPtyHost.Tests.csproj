@@ -5,6 +5,8 @@
     <IsPackable>false</IsPackable>
     <!-- TUnit is a source-generated runner; it does not use VSTest. -->
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <!-- Underscored test names read better than PascalCase sentences. -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using ConPtyHost.Core.Terminal;
 
 namespace ConPtyHost.Tests;
@@ -8,6 +8,7 @@ namespace ConPtyHost.Tests;
 /// tests that must run on a Windows agent, since nothing here can be faked
 /// without also faking the thing under test.
 /// </summary>
+[SupportedOSPlatform("windows10.0.17763.0")]
 public class ConPtySessionTests
 {
     [Test]
