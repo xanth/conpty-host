@@ -1,0 +1,7 @@
+The ConPTY interop in src/ConPtyHost.Core/Native is derived from the
+GUIConsole.ConPTY sample in microsoft/terminal, used under the MIT License.
+
+    Copyright (c) Microsoft Corporation.
+    Licensed under the MIT license.
+
+https://github.com/microsoft/terminal/tree/main/samples/ConPTY/GUIConsole

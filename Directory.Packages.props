@@ -1,0 +1,25 @@
+<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Source-generated mediator: no reflection, AOT-friendly. -->
+    <PackageVersion Include="Mediator.Abstractions" Version="3.0.2" />
+    <PackageVersion Include="Mediator.SourceGenerator" Version="3.0.2" />
+
+    <!-- MessagePack serialization without the reflection/IL-emit of
+         MessagePack-CSharp; source-generated shapes suit AOT. -->
+    <PackageVersion Include="Nerdbank.MessagePack" Version="1.4.95" />
+
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Test">
+    <PackageVersion Include="TUnit" Version="1.76.0" />
+  </ItemGroup>
+
+</Project>

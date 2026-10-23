@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ConPtyHost.Core/ConPtyHost.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ConPtyHost.Tests/ConPtyHost.Tests.csproj" />
+  </Folder>
+</Solution>
