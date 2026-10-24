@@ -40,6 +40,20 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release
 
+      # Which pseudoconsole ran: Microsoft's bundled conpty.dll, or the
+      # copy built into Windows when the bundled one couldn't start.
+      - name: Report the ConPTY backend
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $tmux = "src/ConPtyHost.Tmux/bin/Release/net10.0/tmux.exe"
+          $socket = Join-Path $env:RUNNER_TEMP "backend.sock"
+          & $tmux -S $socket new-session -d -s main cmd.exe
+          $backend = & $tmux -S $socket list-panes -t main -F '#{pane_backend}'
+          & $tmux -S $socket kill-server
+          Get-ChildItem src/ConPtyHost.Tmux/bin/Release/net10.0 -Recurse -Include conpty.dll, OpenConsole.exe | ForEach-Object { "shipped: $($_.FullName)" }
+          "pane backend: $backend"
+
   # Every commit to main is a release: Nerdbank.GitVersioning derives the
   # package version from git height, so each one publishes a new 0.0.N.
   publish:
