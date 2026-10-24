@@ -6,17 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Source-generated mediator: no reflection, AOT-friendly. -->
-    <PackageVersion Include="Mediator.Abstractions" Version="3.0.2" />
-    <PackageVersion Include="Mediator.SourceGenerator" Version="3.0.2" />
+    <!-- Microsoft's out-of-band ConPTY: conpty.dll plus OpenConsole.exe, newer
+         than the copy built into Windows. -->
+    <PackageVersion Include="Microsoft.Windows.Console.ConPTY" Version="1.25.260930003" />
 
-    <!-- MessagePack serialization without the reflection/IL-emit of
-         MessagePack-CSharp; source-generated shapes suit AOT. -->
-    <PackageVersion Include="Nerdbank.MessagePack" Version="1.4.95" />
+    <!-- A port of xterm.js's core, so a captured pane matches what the
+         browser's xterm.js renders. -->
+    <PackageVersion Include="XtermSharp" Version="1.0.0-alpha.10" />
 
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.10.94" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup Label="Test">

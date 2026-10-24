@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/ConPtyHost.Core/ConPtyHost.Core.csproj" />
+    <!-- Copies the tmux executable beside the tests, for the end-to-end runs. -->
+    <ProjectReference Include="../../src/ConPtyHost.Tmux/ConPtyHost.Tmux.csproj" />
   </ItemGroup>
 
 </Project>

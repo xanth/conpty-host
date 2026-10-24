@@ -1,130 +1,61 @@
 # Open questions
 
-Decisions made autonomously, and what could not be resolved alone.
-Ordered by how much they'd cost to change later.
+What still needs a decision or a check, ordered by how much it would cost to
+get wrong.
 
-## Blocking — one real defect
+## 1. How omnigent gets `tmux.exe`
 
-### 1. Output never reaches the read side
+omnigent finds tmux with `shutil.which("tmux")`, so `tmux.exe` has to be on the
+host's `PATH`. Nothing installs it yet. Options:
 
-The one genuinely open bug. `A_session_echoes_what_it_is_told_to_print` is
-`[Skip]`-ed so the rest of the suite can guard the repo; everything else
-passes on both OSes.
+- **A .NET global tool** (`dotnet tool install -g`), published to the existing
+  GitHub Packages feed. Simple, but it needs a .NET runtime on the host and a
+  feed credential.
+- **A self-contained single-file `tmux.exe`** attached to a GitHub release,
+  which omnigent's Windows setup downloads. No runtime needed, but `conpty.dll`
+  and `OpenConsole.exe` must travel with it.
 
-**What works, verified on a `windows-latest` runner:**
+Either way, `PATH` puts it ahead of any other `tmux.exe`, which matters on a
+machine with Git Bash or MSYS2's tmux installed.
 
-- `CreatePseudoConsole` succeeds.
-- `CreateProcess` with `PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE` succeeds — the
-  child starts and reports a real process id.
-- `ResizePseudoConsole` succeeds against a live session.
-- The first read returns data. (The earliest CI run failed on *content*, not
-  on a timeout, which proves bytes flow.)
+## 2. Whether the bundled ConPTY is actually used
 
-**What fails:** after that first chunk — ConPTY's terminal setup sequences —
-reads block until the timeout. The program's own output never arrives and EOF
-never comes. Failure is always `OperationCanceledException` from the read
-timeout.
+`conpty.dll` and `OpenConsole.exe` come from Microsoft's package, with a fallback
+to the copy built into Windows. Where the package's build targets put
+`OpenConsole.exe` relative to `conpty.dll` differs between a plain build and a
+RID-specific publish. `#{pane_backend}` reports `conpty-bundled` or
+`conpty-inbox`, and the end-to-end test logs it on Windows CI, so check that log
+before relying on the newer console host.
 
-**Ruled out:**
+## 3. Job objects
 
-- Not shell startup cost. Failed identically with `pwsh -NoLogo -NoProfile
-  -Command "Write-Output conpty-ok"` and with `cmd.exe /c echo conpty-ok`.
-- Not the timeout being too tight. 30s and 60s behave the same.
-- Not our copies of the duplicated handles. Releasing `inputPipe` read side
-  and `outputPipe` write side after `CreateProcess` — which is correct and
-  should be kept regardless — did not change the symptom.
+The server starts with `CREATE_BREAKAWAY_FROM_JOB`, falling back to staying in
+the caller's job when the job forbids breakaway. If omnigent's Windows runner
+places terminals in a kill-on-close job that forbids breakaway, the server
+dies with its caller and the shell with it. Unverified until omnigent runs it.
 
-**Leading hypothesis, to try first:** `FileStream.ReadAsync` over an anonymous
-pipe handle that was *not* created with `FILE_FLAG_OVERLAPPED`. `CreatePipe`
-returns synchronous handles, and async reads over them are a known trouble
-spot. The Microsoft sample reads **synchronously on a dedicated thread**, which
-this port does not. Next steps, in order:
+## 4. Fidelity limits, by design for now
 
-1. Replace `ReadAsync` with a blocking `Read` on a background thread, matching
-   the sample.
-2. Failing that, drop `FileStream` and P/Invoke `ReadFile` directly.
-3. Failing that, create the pipes overlapped and use real async I/O.
+- **Colour:** XtermSharp keeps a 256-colour palette, so 24-bit colour is
+  matched to the nearest palette entry in `capture-pane -e`. The browser
+  receives raw `%output` bytes, so what the user sees is unaffected.
+- **Copy mode:** none, so `%paste-buffer-changed` is never sent.
+- **`load-buffer -w`:** stores the buffer but doesn't forward it to a client
+  clipboard.
+- **Off Windows** the stand-in is a redirected process, not a terminal, so only
+  line-oriented programs work there. It exists to test the tmux layer.
 
-This is also why the output pump (below) is unwritten: it needs this answer.
+## 5. XtermSharp is unmaintained
 
-## Blocking — decisions
+The last commit was in November 2022, and the NuGet package is
+`1.0.0-alpha.10`. It's MIT and small enough to vendor if a fix is ever needed.
 
-### 2. Transport and framing are unchosen, so there is no host project
+## Resolved
 
-`Contracts/` defines messages and `Handlers/` handles them, but nothing carries
-them across a process boundary. Unresolved: stdio vs named pipe vs TCP
-loopback; length-prefixed MessagePack vs something self-delimiting; who owns
-reconnect. Not invented on purpose — it's the most expensive decision to
-unpick, and "PuTTY stub" doesn't pin it down.
-
-## Decisions worth a second opinion
-
-### 3. Ported the Microsoft sample rather than taking a dependency
-
-Two maintained C# ConPTY wrappers exist: **ConPtySharp** and **Porta.Pty**
-(cross-platform, native shim for .NET 7+). "Write one that is 1:1" was read as
-*port the canonical implementation*, so `Native/` follows microsoft/terminal's
-GUIConsole.ConPTY sample in shape and call order, MIT, attributed per-file and
-in `LICENSE`/`NOTICE`.
-
-Two deliberate deviations:
-
-- `DllImport` → source-generated `LibraryImport`, for AOT/trim safety.
-- `STARTUPINFO`'s unused string fields are `nint`, not `string`, keeping
-  `STARTUPINFOEX` blittable so `CreateProcess` can use `LibraryImport`. The
-  sample never sets them.
-
-If "1:1" meant byte-for-byte, both have to go — and note that deviation #1 is
-entangled with the bug in §1, since the sample's synchronous read is part of
-what was changed.
-
-### 4. Stable packages over newer prereleases
-
-| Package | Chosen | Also available |
-| --- | --- | --- |
-| Mediator | 3.0.2 | 3.1.0-rc.1 |
-| Nerdbank.MessagePack | 1.4.95 | 1.5.22-alpha |
-| TUnit | 1.76.0 | — |
-| Nerdbank.GitVersioning | 3.10.94 | — |
-
-Stable seemed right for a first release on a GA SDK.
-
-### 5. Windows-only tests guard at runtime
-
-`[SupportedOSPlatform]` satisfies CA1416 but does **not** stop execution, so
-the ConPTY tests also need `if (!OperatingSystem.IsWindows()) return;`. That
-makes them silently *pass* on Linux rather than report as skipped. A TUnit
-conditional-skip attribute would be more honest if one exists.
-
-### 6. Repo name
-
-`conpty-host`. Nothing depends on it; cheap to rename.
-
-## Resolved by the first green build
-
-Previously listed as unverified, now confirmed working: `Mediator.Unit.Value`;
-`[GenerateShape]` with PolyType under central transitive pinning (no explicit
-`PackageVersion` needed); `LibraryImport` against every ConPTY entry point; the
-`.slnx` solution format; TUnit's `[Skip]`; and Nerdbank.GitVersioning deriving
-the package version `0.0.N` from git height on `main`.
-
-**Target: .NET 10 / C# 14.** Decided 2026-10-24, replacing the original .NET 11
-RC target. Nothing written used a C# 15 feature, and .NET 11 couldn't build on
-the development machine at all. The project now builds and tests locally.
-
-Two build-config traps worth remembering: Mediator's generator **fails the
-build** for any declared message without a handler — which is how
-`SessionOutput`/`SessionExited` were caught — and on the .NET 10 SDK, TUnit's
-Microsoft.Testing.Platform runner must be opted into via `"test": { "runner":
-"Microsoft.Testing.Platform" }` in `global.json`, or `dotnet test` routes
-through VSTest and refuses to run.
-
-## Not started
-
-- **Output pump.** `SessionOutput` is declared and handled but nothing
-  publishes it; no component drains `ITerminalSession.Output`. Blocked on §1.
-- **Exit detection.** `SessionExited` likewise — no wait on the process handle.
-- **The consuming side.** How a host adopts `ITerminalBackend` is unwritten.
-  For omnigent that means Python over the transport from §2, replacing the
-  tmux assumptions in `terminals/control_bridge.py` and
-  `runner/native_controls.py`.
+- **Output never reached the read side.** The child inherited the host's
+  redirected standard handles. Fixed with `STARTF_USESTDHANDLES` and null
+  handles, verified on Windows CI.
+- **Transport.** Newline-delimited JSON frames over the `-S` Unix domain
+  socket, between our own client and server only. omnigent never sees them; it
+  sees tmux's interface.
+- **Target: .NET 10 / C# 14**, decided 2026-10-24.

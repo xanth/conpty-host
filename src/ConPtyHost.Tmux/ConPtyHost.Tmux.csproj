@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>tmux</AssemblyName>
+    <RootNamespace>ConPtyHost.Tmux</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ConPtyHost.Core/ConPtyHost.Core.csproj" />
+    <!-- Ships conpty.dll and OpenConsole.exe beside the executable. -->
+    <PackageReference Include="Microsoft.Windows.Console.ConPTY" />
+  </ItemGroup>
+
+</Project>

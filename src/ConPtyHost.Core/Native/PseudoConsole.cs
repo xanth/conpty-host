@@ -21,11 +21,26 @@ namespace ConPtyHost.Core.Native;
 /// </remarks>
 internal sealed class PseudoConsole : IDisposable
 {
+    // conpty.dll is loaded from beside the app when the package shipped it.
+    private static readonly bool BundledAvailable =
+        NativeLibrary.TryLoad(
+            "conpty.dll",
+            typeof(PseudoConsole).Assembly,
+            DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.ApplicationDirectory,
+            out _);
+
     private readonly SafePseudoConsoleHandle handle;
 
-    private PseudoConsole(SafePseudoConsoleHandle handle) => this.handle = handle;
+    private PseudoConsole(SafePseudoConsoleHandle handle, bool bundled)
+    {
+        this.handle = handle;
+        Bundled = bundled;
+    }
 
     internal nint Handle => handle.DangerousGetHandle();
+
+    /// <summary>Whether conpty.dll, rather than the inbox kernel32 API, owns this console.</summary>
+    internal bool Bundled { get; }
 
     internal static PseudoConsole Create(
         nint inputReadSide,
@@ -33,25 +48,32 @@ internal sealed class PseudoConsole : IDisposable
         short width,
         short height)
     {
-        int hr = PseudoConsoleApi.CreatePseudoConsole(
-            new Coord(width, height),
-            inputReadSide,
-            outputWriteSide,
-            dwFlags: 0,
-            out nint hPC);
+        Coord size = new(width, height);
 
+        // A bundled conpty.dll can still fail, for instance when its
+        // OpenConsole.exe is missing; the inbox API is always there.
+        if (BundledAvailable
+            && PseudoConsoleApi.ConptyCreatePseudoConsole(size, inputReadSide, outputWriteSide, 0, out nint bundled) == 0)
+        {
+            return new PseudoConsole(new SafePseudoConsoleHandle(bundled, isBundled: true), bundled: true);
+        }
+
+        int hr = PseudoConsoleApi.CreatePseudoConsole(size, inputReadSide, outputWriteSide, 0, out nint inbox);
         if (hr != 0)
         {
             Marshal.ThrowExceptionForHR(hr);
         }
 
-        return new PseudoConsole(new SafePseudoConsoleHandle(hPC));
+        return new PseudoConsole(new SafePseudoConsoleHandle(inbox, isBundled: false), bundled: false);
     }
 
     /// <summary>Tell the attached client that its viewport changed.</summary>
     internal void Resize(short width, short height)
     {
-        int hr = PseudoConsoleApi.ResizePseudoConsole(Handle, new Coord(width, height));
+        Coord size = new(width, height);
+        int hr = Bundled
+            ? PseudoConsoleApi.ConptyResizePseudoConsole(Handle, size)
+            : PseudoConsoleApi.ResizePseudoConsole(Handle, size);
         if (hr != 0)
         {
             Marshal.ThrowExceptionForHR(hr);
@@ -62,15 +84,26 @@ internal sealed class PseudoConsole : IDisposable
 
     private sealed class SafePseudoConsoleHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafePseudoConsoleHandle(nint existingHandle)
+        private readonly bool isBundled;
+
+        internal SafePseudoConsoleHandle(nint existingHandle, bool isBundled)
             : base(ownsHandle: true)
         {
+            this.isBundled = isBundled;
             SetHandle(existingHandle);
         }
 
         protected override bool ReleaseHandle()
         {
-            PseudoConsoleApi.ClosePseudoConsole(handle);
+            if (isBundled)
+            {
+                PseudoConsoleApi.ConptyClosePseudoConsole(handle);
+            }
+            else
+            {
+                PseudoConsoleApi.ClosePseudoConsole(handle);
+            }
+
             return true;
         }
     }

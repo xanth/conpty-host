@@ -13,17 +13,13 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="XtermSharp" />
+  </ItemGroup>
+
   <ItemGroup Label="Package">
     <None Include="../../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Mediator.Abstractions" />
-    <PackageReference Include="Mediator.SourceGenerator">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Nerdbank.MessagePack" />
-  </ItemGroup>
 
 </Project>

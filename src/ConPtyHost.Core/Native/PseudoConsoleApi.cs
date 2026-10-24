@@ -5,7 +5,7 @@
 // Derived from the GUIConsole.ConPTY sample in microsoft/terminal.
 // https://github.com/microsoft/terminal/tree/main/samples/ConPTY/GUIConsole
 
-// Kept 1:1 with the sample in shape and call order. Three deviations:
+// Kept 1:1 with the sample in shape and call order. Four deviations:
 //   - DllImport is replaced by source-generated LibraryImport, so the layer
 //     stays AOT- and trim-safe.
 //   - STARTUPINFO's unused string fields are declared as nint rather than
@@ -15,6 +15,9 @@
 //     runs from a GUI app with no std handles; a host whose own stdio is
 //     redirected would otherwise hand those handles to the child, and the
 //     child's output would bypass the pseudoconsole entirely.
+//   - The pseudoconsole calls go to Microsoft.Windows.Console.ConPTY's
+//     conpty.dll when it ships alongside, which runs a current OpenConsole.exe
+//     rather than the inbox conhost.exe; the inbox kernel32 API is the fallback.
 
 using System.Runtime.InteropServices;
 
@@ -78,6 +81,7 @@ internal struct SecurityAttributes
 internal static partial class PseudoConsoleApi
 {
     private const string Kernel32 = "kernel32.dll";
+    private const string Conpty = "conpty.dll";
 
     /// <summary>Attribute identifying an HPCON in a proc-thread attribute list.</summary>
     internal const nint ProcThreadAttributePseudoConsole = 0x00020016;
@@ -128,6 +132,22 @@ internal static partial class PseudoConsoleApi
         ref StartupInfoEx lpStartupInfo,
         out ProcessInformation lpProcessInformation);
 
+    /// <summary>CreateProcess with a plain STARTUPINFO, for processes not attached to a pseudoconsole.</summary>
+    [LibraryImport(Kernel32, EntryPoint = "CreateProcessW", SetLastError = true,
+        StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool CreatePlainProcess(
+        string? lpApplicationName,
+        string? lpCommandLine,
+        nint lpProcessAttributes,
+        nint lpThreadAttributes,
+        [MarshalAs(UnmanagedType.Bool)] bool bInheritHandles,
+        uint dwCreationFlags,
+        nint lpEnvironment,
+        string? lpCurrentDirectory,
+        ref StartupInfo lpStartupInfo,
+        out ProcessInformation lpProcessInformation);
+
     [LibraryImport(Kernel32, EntryPoint = "InitializeProcThreadAttributeList", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool InitializeProcThreadAttributeList(
@@ -149,6 +169,33 @@ internal static partial class PseudoConsoleApi
 
     [LibraryImport(Kernel32, EntryPoint = "DeleteProcThreadAttributeList")]
     internal static partial void DeleteProcThreadAttributeList(nint lpAttributeList);
+
+    internal const uint Infinite = 0xFFFFFFFF;
+
+    [LibraryImport(Conpty, EntryPoint = "ConptyCreatePseudoConsole")]
+    internal static partial int ConptyCreatePseudoConsole(
+        Coord size,
+        nint hInput,
+        nint hOutput,
+        uint dwFlags,
+        out nint phPC);
+
+    [LibraryImport(Conpty, EntryPoint = "ConptyResizePseudoConsole")]
+    internal static partial int ConptyResizePseudoConsole(nint hPC, Coord size);
+
+    [LibraryImport(Conpty, EntryPoint = "ConptyClosePseudoConsole")]
+    internal static partial void ConptyClosePseudoConsole(nint hPC);
+
+    [LibraryImport(Kernel32, EntryPoint = "WaitForSingleObject", SetLastError = true)]
+    internal static partial uint WaitForSingleObject(nint hHandle, uint dwMilliseconds);
+
+    [LibraryImport(Kernel32, EntryPoint = "GetExitCodeProcess", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetExitCodeProcess(nint hProcess, out uint lpExitCode);
+
+    [LibraryImport(Kernel32, EntryPoint = "TerminateProcess", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool TerminateProcess(nint hProcess, uint uExitCode);
 
     [LibraryImport(Kernel32, EntryPoint = "CloseHandle", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

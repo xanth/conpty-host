@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/ConPtyHost.Core/ConPtyHost.Core.csproj" />
+    <Project Path="src/ConPtyHost.Tmux/ConPtyHost.Tmux.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ConPtyHost.Tests/ConPtyHost.Tests.csproj" />
