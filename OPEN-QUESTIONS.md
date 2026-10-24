@@ -18,14 +18,18 @@ host's `PATH`. Nothing installs it yet. Options:
 Either way, `PATH` puts it ahead of any other `tmux.exe`, which matters on a
 machine with Git Bash or MSYS2's tmux installed.
 
-## 2. Whether the bundled ConPTY is actually used
+## 2. `OpenConsole.exe` isn't shipped yet
 
-`conpty.dll` and `OpenConsole.exe` come from Microsoft's package, with a fallback
-to the copy built into Windows. Where the package's build targets put
-`OpenConsole.exe` relative to `conpty.dll` differs between a plain build and a
-RID-specific publish. `#{pane_backend}` reports `conpty-bundled` or
-`conpty-inbox`, and the end-to-end test logs it on Windows CI, so check that log
-before relying on the newer console host.
+Windows CI shows `#{pane_backend}` = `conpty-bundled`: Microsoft's `conpty.dll`
+creates the pseudoconsole. But only `conpty.dll` reaches the build output, under
+`runtimes/win-*/native/`. The package's build targets copy `OpenConsole.exe`
+only when its `ConptyRequiresx64Host` (or x86/arm64) condition holds, and a
+plain framework-dependent build doesn't meet it. So `conpty.dll` is probably
+starting Windows' own `conhost.exe`, and the newer console host isn't in use.
+
+To fix when packaging (see 1): publish per runtime identifier, check that
+`OpenConsole.exe` lands where `conpty.dll` looks for it, and add a CI check for
+the running console host's image name.
 
 ## 3. Job objects
 
