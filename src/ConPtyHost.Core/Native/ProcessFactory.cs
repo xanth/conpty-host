@@ -79,6 +79,11 @@ internal static class ProcessFactory
         StartupInfoEx startupInfo = default;
         startupInfo.StartupInfo.cb = Marshal.SizeOf<StartupInfoEx>();
 
+        // Null std handles, used explicitly: otherwise a host with redirected
+        // stdio passes those handles to the child, which then writes around
+        // the pseudoconsole instead of into it.
+        startupInfo.StartupInfo.dwFlags = PseudoConsoleApi.StartfUseStdHandles;
+
         // First call is expected to fail; it reports the buffer size.
         nint size = 0;
         PseudoConsoleApi.InitializeProcThreadAttributeList(0, 1, 0, ref size);

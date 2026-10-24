@@ -5,12 +5,16 @@
 // Derived from the GUIConsole.ConPTY sample in microsoft/terminal.
 // https://github.com/microsoft/terminal/tree/main/samples/ConPTY/GUIConsole
 
-// Kept 1:1 with the sample in shape and call order. Two deviations:
+// Kept 1:1 with the sample in shape and call order. Three deviations:
 //   - DllImport is replaced by source-generated LibraryImport, so the layer
 //     stays AOT- and trim-safe.
 //   - STARTUPINFO's unused string fields are declared as nint rather than
 //     string, which keeps STARTUPINFOEX blittable and lets CreateProcess go
 //     through LibraryImport. The sample never sets them.
+//   - ProcessFactory sets STARTF_USESTDHANDLES with null handles. The sample
+//     runs from a GUI app with no std handles; a host whose own stdio is
+//     redirected would otherwise hand those handles to the child, and the
+//     child's output would bypass the pseudoconsole entirely.
 
 using System.Runtime.InteropServices;
 
@@ -80,6 +84,9 @@ internal static partial class PseudoConsoleApi
 
     /// <summary>Tells CreateProcess that STARTUPINFOEX, not STARTUPINFO, was passed.</summary>
     internal const uint ExtendedStartupInfoPresent = 0x00080000;
+
+    /// <summary>STARTUPINFO flag: use the hStd* fields rather than inheriting the parent's.</summary>
+    internal const int StartfUseStdHandles = 0x00000100;
 
     /// <summary>Seeds the pseudoconsole with the parent console's cursor position.</summary>
     internal const uint PseudoConsoleInheritCursor = 1;
