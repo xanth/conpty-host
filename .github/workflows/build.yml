@@ -39,3 +39,35 @@ jobs:
 
       - name: Test
         run: dotnet test --no-build --configuration Release
+
+  # Every commit to main is a release: Nerdbank.GitVersioning derives the
+  # package version from git height, so each one publishes a new 0.0.N.
+  publish:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Nerdbank.GitVersioning computes from git height.
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Pack
+        run: >
+          dotnet pack src/ConPtyHost.Core/ConPtyHost.Core.csproj
+          --configuration Release
+          --output artifacts
+
+      - name: Push to GitHub Packages
+        run: >
+          dotnet nuget push "artifacts/*.nupkg"
+          --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+          --api-key ${{ secrets.GITHUB_TOKEN }}
