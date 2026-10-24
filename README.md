@@ -43,13 +43,14 @@ ConPTY bugs:
 
 Scaffold. The native layer, the backend seam, the contracts and the handlers are
 written; the transport host is not, because the framing has not been chosen (see
-`OPEN-QUESTIONS.md`). Nothing here has been compiled or executed yet — see the
-same file for why.
+`OPEN-QUESTIONS.md`). CI runs the pseudoconsole on a real Windows agent: session
+start, process attach and resize pass; one output-read defect is open, recorded
+in the same file.
 
 ## Building
 
 ```sh
-nix develop      # or install an 11.x SDK yourself
+nix develop      # or install a .NET 10 SDK yourself
 dotnet test
 ```
 

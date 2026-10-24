@@ -29,10 +29,7 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-          # global.json pins an 11.x SDK, which is RC until November 2026,
-          # so the preview channel is required until GA.
-          dotnet-version: '11.0.x'
-          dotnet-quality: 'preview'
+          dotnet-version: '10.0.x'
 
       - name: Restore
         run: dotnet restore
@@ -41,8 +38,4 @@ jobs:
         run: dotnet build --no-restore --configuration Release
 
       - name: Test
-        # A Microsoft.Testing.Platform project builds to an executable, so run
-        # it directly rather than depending on the SDK's test-runner opt-in.
-        run: >
-          dotnet run --project tests/ConPtyHost.Tests/ConPtyHost.Tests.csproj
-          --configuration Release --no-build
+        run: dotnet test --no-build --configuration Release

@@ -16,10 +16,6 @@
           name = "conpty-host-dev";
 
           buildInputs = with pkgs; [
-            # NOTE: nixpkgs tracks released SDKs. The project pins .NET 11 in
-            # global.json, which is RC until November 2026, so this shell
-            # currently provides .NET 10 and `dotnet build` will refuse until
-            # an 11.x SDK is available. See OPEN-QUESTIONS.md.
             dotnet-sdk_10
             powershell
             git

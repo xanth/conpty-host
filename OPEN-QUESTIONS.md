@@ -49,24 +49,7 @@ This is also why the output pump (below) is unwritten: it needs this answer.
 
 ## Blocking — decisions
 
-### 2. .NET 11 is RC until November 2026
-
-CI builds against `11.0.100-rc.2` from the preview channel. Two things were
-needed and are worth understanding before changing them:
-
-- `allowPrerelease: true`, or `rollForward` will not consider an RC.
-- A `10.0.100` floor with `latestMajor`, **not** `version: 11.0.100`. A
-  prerelease sorts *below* its release in SemVer, so `11.0.100-rc.2` is lower
-  than a requested `11.0.100` and could never be selected — that combination
-  is unsatisfiable, and it failed with the same "no compatible SDK" message
-  that a missing install gives.
-
-Local builds still cannot work: only `10.0.301` is installed here and the TFM
-is `net11.0`. Decision for tomorrow: hold the .NET 11 target, or drop to
-`net10.0` so the thing builds on this machine? Nothing written so far uses a
-C# 15 feature, so dropping costs nothing but the stated goal.
-
-### 3. Transport and framing are unchosen, so there is no host project
+### 2. Transport and framing are unchosen, so there is no host project
 
 `Contracts/` defines messages and `Handlers/` handles them, but nothing carries
 them across a process boundary. Unresolved: stdio vs named pipe vs TCP
@@ -76,7 +59,7 @@ unpick, and "PuTTY stub" doesn't pin it down.
 
 ## Decisions worth a second opinion
 
-### 4. Ported the Microsoft sample rather than taking a dependency
+### 3. Ported the Microsoft sample rather than taking a dependency
 
 Two maintained C# ConPTY wrappers exist: **ConPtySharp** and **Porta.Pty**
 (cross-platform, native shim for .NET 7+). "Write one that is 1:1" was read as
@@ -95,7 +78,7 @@ If "1:1" meant byte-for-byte, both have to go — and note that deviation #1 is
 entangled with the bug in §1, since the sample's synchronous read is part of
 what was changed.
 
-### 5. Stable packages over newer prereleases
+### 4. Stable packages over newer prereleases
 
 | Package | Chosen | Also available |
 | --- | --- | --- |
@@ -104,17 +87,16 @@ what was changed.
 | TUnit | 1.76.0 | — |
 | Nerdbank.GitVersioning | 3.10.94 | — |
 
-Stable seemed right, though the project already targets an RC SDK, so the
-consistency argument cuts the other way.
+Stable seemed right for a first release on a GA SDK.
 
-### 6. Windows-only tests guard at runtime
+### 5. Windows-only tests guard at runtime
 
 `[SupportedOSPlatform]` satisfies CA1416 but does **not** stop execution, so
 the ConPTY tests also need `if (!OperatingSystem.IsWindows()) return;`. That
 makes them silently *pass* on Linux rather than report as skipped. A TUnit
 conditional-skip attribute would be more honest if one exists.
 
-### 7. Repo name
+### 6. Repo name
 
 `conpty-host`. Nothing depends on it; cheap to rename.
 
@@ -126,12 +108,16 @@ Previously listed as unverified, now confirmed working: `Mediator.Unit.Value`;
 `.slnx` solution format; TUnit's `[Skip]`; and Nerdbank.GitVersioning deriving
 `0.0.1.N` from git height.
 
+**Target: .NET 10 / C# 14.** Decided 2026-10-24, replacing the original .NET 11
+RC target. Nothing written used a C# 15 feature, and .NET 11 couldn't build on
+the development machine at all. The project now builds and tests locally.
+
 Two build-config traps worth remembering: Mediator's generator **fails the
 build** for any declared message without a handler — which is how
-`SessionOutput`/`SessionExited` were caught — and TUnit needs
-`[dotnet.test:runner]` in `dotnet.config` with a **colon**, not a dot, or the
-opt-in is silently ignored and `dotnet test` still routes through VSTest. CI
-sidesteps that by running the test executable directly.
+`SessionOutput`/`SessionExited` were caught — and on the .NET 10 SDK, TUnit's
+Microsoft.Testing.Platform runner must be opted into via `"test": { "runner":
+"Microsoft.Testing.Platform" }` in `global.json`, or `dotnet test` routes
+through VSTest and refuses to run.
 
 ## Not started
 
@@ -139,6 +125,6 @@ sidesteps that by running the test executable directly.
   publishes it; no component drains `ITerminalSession.Output`. Blocked on §1.
 - **Exit detection.** `SessionExited` likewise — no wait on the process handle.
 - **The consuming side.** How a host adopts `ITerminalBackend` is unwritten.
-  For omnigent that means Python over the transport from §3, replacing the
+  For omnigent that means Python over the transport from §2, replacing the
   tmux assumptions in `terminals/control_bridge.py` and
   `runner/native_controls.py`.
