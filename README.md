@@ -54,6 +54,14 @@ nix develop      # or install a .NET 10 SDK yourself
 dotnet test
 ```
 
+## Versions
+
+Every commit to `main` publishes `ConPtyHost.Core` to GitHub Packages once the
+Windows and Linux builds pass. The version is `0.0.N`, where `N` is the commit's
+git height, computed by Nerdbank.GitVersioning from `version.json`; nothing is
+tagged or bumped by hand. Bump `version` in `version.json` to start a new
+minor or major line.
+
 [sample]: https://github.com/microsoft/terminal/tree/main/samples/ConPTY/GUIConsole
 [nbmp]: https://github.com/AArnott/Nerdbank.MessagePack
 [mediator]: https://github.com/martinothamar/Mediator

@@ -106,7 +106,7 @@ Previously listed as unverified, now confirmed working: `Mediator.Unit.Value`;
 `[GenerateShape]` with PolyType under central transitive pinning (no explicit
 `PackageVersion` needed); `LibraryImport` against every ConPTY entry point; the
 `.slnx` solution format; TUnit's `[Skip]`; and Nerdbank.GitVersioning deriving
-`0.0.1.N` from git height.
+the package version `0.0.N` from git height on `main`.
 
 **Target: .NET 10 / C# 14.** Decided 2026-10-24, replacing the original .NET 11
 RC target. Nothing written used a C# 15 feature, and .NET 11 couldn't build on
